@@ -68,7 +68,20 @@ class ApiDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(config.thisTranslation["settings"])
-
+        self.apiBase = QComboBox()
+        self.apiBase.setEditable(True)
+        self.apiBase.setInsertPolicy(QComboBox.InsertAtBottom)
+        initialIndex = -1
+        index = 0
+        for key in ("https://api.devchat.ai/v1", "https://api.openai.com/v1"):
+            self.apiBase.addItem(key)
+            if key == config.apiBase:
+                initialIndex = index
+            index += 1
+        if initialIndex < 0:
+            self.apiBase.addItem(config.apiBase)
+            initialIndex = index
+        self.apiBase.setCurrentIndex(initialIndex)
         self.apiKeyEdit = QLineEdit(config.openaiApiKey)
         self.apiKeyEdit.setEchoMode(QLineEdit.Password)
         self.orgEdit = QLineEdit(config.openaiApiOrganization)
@@ -127,6 +140,7 @@ class ApiDialog(QDialog):
         maximumOnlineSearchResults = config.thisTranslation["maximumOnlineSearchResults"]
         required = config.thisTranslation["required"]
         optional = config.thisTranslation["optional"]
+        layout.addRow(f"OpenAI API Base URL [{required}]:", self.apiBase)
         layout.addRow(f"OpenAI API Key [{required}]:", self.apiKeyEdit)
         layout.addRow(f"Organization ID [{optional}]:", self.orgEdit)
         layout.addRow(f"API Model [{required}]:", self.apiModelBox)
@@ -142,7 +156,10 @@ class ApiDialog(QDialog):
         self.autoScrollingCheckBox.stateChanged.connect(self.toggleAutoScrollingCheckBox)
 
         self.setLayout(layout)
-
+    
+    def api_base(self):
+        return self.apiBase.currentText().strip()
+    
     def api_key(self):
         return self.apiKeyEdit.text().strip()
 
@@ -236,6 +253,7 @@ class ChatGPTAPI(QWidget):
         self.parent = parent
         # required
         openai.api_key = os.environ["OPENAI_API_KEY"] = config.openaiApiKey
+        openai.api_base = os.environ["OPENAI_API_BASE"] = config.apiBase
         # optional
         if config.openaiApiOrganization:
             openai.organization = config.openaiApiOrganization
@@ -558,6 +576,8 @@ class ChatGPTAPI(QWidget):
         result = dialog.exec() if config.qtLibrary == "pyside6" else dialog.exec_()
         if result == QDialog.Accepted:
             config.openaiApiKey = dialog.api_key()
+            config.apiBase = dialog.api_base()
+            openai.api_base = os.environ["OPENAI_API_BASE"] = config.apiBase
             if not openai.api_key:
                 openai.api_key = os.environ["OPENAI_API_KEY"] = config.openaiApiKey
             config.openaiApiOrganization = dialog.org()

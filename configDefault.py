@@ -64,6 +64,7 @@ def setConfig():
         'enable': 'Enable',
     }
     defaultSettings = (
+        ('apiBase',"https://api.openai.com/v1"),
         ('chatGPTApiAudio', 0),
         ('chatGPTApiAudioLanguage', 'en'),
         ('chatGPTApiModel', 'gpt-3.5-turbo'),
